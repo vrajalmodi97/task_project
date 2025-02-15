@@ -31,7 +31,26 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         title: 'Send Money App',
-        theme: ThemeData(primarySwatch: Colors.blue),
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          primaryColor: Colors.blueAccent, // Set primary color to blueAccent
+          colorScheme: ColorScheme.fromSwatch(
+            primarySwatch: Colors.blue, // Ensures a blue-themed UI
+          ).copyWith(
+            secondary: Colors.blueAccent, // Accent color
+          ),
+          // appBarTheme: AppBarTheme(
+          //   backgroundColor:
+          //       Colors.blueAccent, // Set AppBar color to blueAccent
+          //   foregroundColor: Colors.white, // Ensure text/icons are visible
+          // ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blueAccent, // Button color
+              foregroundColor: Colors.white, // Text color
+            ),
+          ),
+        ),
         home: SplashScreen(),
         builder: EasyLoading.init(),
       ),

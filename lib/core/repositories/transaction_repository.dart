@@ -9,7 +9,12 @@ class TransactionRepository {
     try {
       Response response = await _apiService.postRequest("/mfind", {
         "dbname": "demo_wallet",
-        "searchquery": {"senderId": userId},
+        "searchquery": {
+          "\$or": [
+            {"senderId": userId},
+            {"receiverId": userId}
+          ]
+        },
       });
 
       if (response.statusCode == 200) {

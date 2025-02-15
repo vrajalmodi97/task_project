@@ -95,17 +95,52 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
   }
 
   void _showMessageDialog(String title, String message) {
-    showDialog(
+    // Hide Keyboard Before Showing Dialog
+    FocusScope.of(context).unfocus();
+    _amountController.clear();
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("OK"),
-          ),
-        ],
+      isScrollControlled: true, // Makes the bottom sheet full width
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => Container(
+        width: double.infinity, // Ensures full width
+        padding: EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              title,
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 10),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity, // Makes the button full width
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  padding: EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: Text(
+                  "OK",
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -113,23 +148,64 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Send Money")),
+      appBar: AppBar(
+        title: Text("Send Money"),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context), // Back Button
+        ),
+      ),
       body: Padding(
         padding: EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Recipient: ${widget.recipient.name}",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(height: 10),
+            // Recipient Information
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade100,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: Colors.blueAccent,
+                    child: Text(
+                      widget.recipient.name![0].toUpperCase(),
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(widget.recipient.name ?? "No Name",
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      Text(widget.recipient.email ?? "No Email",
+                          style: TextStyle(color: Colors.grey)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 20),
+
+            // Balance Display
             BlocBuilder<WalletBloc, WalletState>(
               builder: (context, state) {
                 if (state is WalletLoading) {
                   return Center(child: CircularProgressIndicator());
                 } else if (state is WalletLoaded) {
                   return Text(
-                      "Your Balance: PHP ${state.balance.toStringAsFixed(2)}",
-                      style: TextStyle(fontSize: 16));
+                    "Your Balance: PHP ${state.balance.toStringAsFixed(2)}",
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green),
+                  );
                 } else {
                   return Text("Error loading balance",
                       style: TextStyle(color: Colors.red));
@@ -137,15 +213,22 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
               },
             ),
             SizedBox(height: 20),
+
             Form(
               key: _formKey,
               child: TextFormField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
-                onChanged: (value) {
-                  setState(() {});
-                },
-                decoration: InputDecoration(labelText: "Enter Amount"),
+                decoration: InputDecoration(
+                  labelText: "Enter Amount",
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                        color: Colors.black87), // Border color when not focused
+                  ),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  prefixIcon: Icon(Icons.money),
+                ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return "Amount cannot be empty";
@@ -159,11 +242,15 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
               ),
             ),
             SizedBox(height: 20),
+
+            // Send Money Button
             BlocConsumer<WalletBloc, WalletState>(
               listener: (context, state) {
                 if (state is WalletTransactionSuccess) {
+                  EasyLoading.dismiss();
                   _showMessageDialog("Success", "Money sent successfully!");
                 } else if (state is WalletError) {
+                  EasyLoading.dismiss();
                   _showMessageDialog("Error", "Transaction failed");
                 }
               },
@@ -171,7 +258,15 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                 return Center(
                   child: ElevatedButton(
                     onPressed: _sendMoney,
-                    child: Text("Send Money"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: Text("Send Money",
+                        style: TextStyle(fontSize: 16, color: Colors.white)),
                   ),
                 );
               },

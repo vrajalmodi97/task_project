@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:task_project/core/blocs/services/shared_prefs.dart';
 import 'package:task_project/core/blocs/transactions/transaction_bloc.dart';
 import 'package:task_project/core/blocs/transactions/transaction_event.dart';
@@ -18,6 +19,17 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     context.read<TransactionBloc>().add(LoadTransactions(SharedPrefs().userId));
   }
 
+  String formatDate(String? dateString) {
+    if (dateString == null || dateString.isEmpty) return "Unknown Date";
+
+    try {
+      DateTime date = DateTime.parse(dateString);
+      return DateFormat('dd MMM yyyy, hh:mm a').format(date);
+    } catch (e) {
+      return "Invalid Date";
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -29,48 +41,88 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           } else if (state is TransactionLoaded) {
             return ListView.builder(
               itemCount: state.transactions.length,
+              padding: EdgeInsets.all(12),
               itemBuilder: (context, index) {
                 final TransactionData transaction = state.transactions[index];
+
                 return Card(
-                  margin: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  child: ListTile(
-                    contentPadding: EdgeInsets.all(10),
-                    leading: CircleAvatar(
-                      backgroundColor: transaction.status == "SUCCESS"
-                          ? Colors.green
-                          : Colors.red,
-                      child: Icon(
-                        transaction.status == "SUCCESS"
-                            ? Icons.check
-                            : Icons.error,
-                        color: Colors.white,
-                      ),
-                    ),
-                    title: Text(
-                      '${transaction.senderName} → ${transaction.receiverName}',
-                      softWrap: true,
-                      maxLines: 2,
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Column(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  margin: EdgeInsets.symmetric(vertical: 8),
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Status: ${transaction.status}',
-                            style: TextStyle(
+                        // Sender → Receiver
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '${transaction.senderName} → ${transaction.receiverName}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            Icon(
+                              transaction.status == "SUCCESS"
+                                  ? Icons.check_circle
+                                  : Icons.error,
+                              color: transaction.status == "SUCCESS"
+                                  ? Colors.green
+                                  : Colors.red,
+                              size: 24,
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8),
+
+                        // Amount + Status
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'PHP ${transaction.amount?.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blueAccent,
+                              ),
+                            ),
+                            Text(
+                              transaction.status.toString(),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
                                 color: transaction.status == "SUCCESS"
                                     ? Colors.green
-                                    : Colors.red)),
+                                    : Colors.red,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8),
+
+                        // Formatted Date
                         Text(
-                            'Amount: PHP ${transaction.amount?.toStringAsFixed(2)}'),
+                          'Date: ${formatDate(transaction.createdAt)}',
+                          style: TextStyle(color: Colors.grey[700]),
+                        ),
                       ],
                     ),
-                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
                   ),
                 );
               },
             );
           } else {
-            return Center(child: Text('Error loading transactions'));
+            return Center(
+              child: Text(
+                'No transactions found!',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+            );
           }
         },
       ),

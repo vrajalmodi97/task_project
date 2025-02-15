@@ -27,8 +27,12 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
     setState(() {
       _filteredUsers = _allUsers
           .where((user) =>
-              user.name!.toLowerCase().contains(_searchController.text.toLowerCase()) ||
-              user.email!.toLowerCase().contains(_searchController.text.toLowerCase()))
+              user.name!
+                  .toLowerCase()
+                  .contains(_searchController.text.toLowerCase()) ||
+              user.email!
+                  .toLowerCase()
+                  .contains(_searchController.text.toLowerCase()))
           .toList();
     });
   }
@@ -39,7 +43,6 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
       appBar: AppBar(
         title: Text(
           "Select Recipient",
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
@@ -50,7 +53,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 5),
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
@@ -59,9 +62,11 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                     borderSide: BorderSide(color: Colors.black87),
                   ),
                   prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10)),
                 ),
-                onChanged: (value) => _filterUsers(), // Correctly filtering users
+                onChanged: (value) =>
+                    _filterUsers(), // Correctly filtering users
               ),
             ),
             SizedBox(height: 10),
@@ -72,34 +77,41 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                     return Center(child: CircularProgressIndicator());
                   } else if (state is UserLoaded) {
                     _allUsers = state.users; // Store full user list
-                    _filteredUsers = _filteredUsers.isEmpty && _searchController.text.isEmpty
-                        ? _allUsers
-                        : _filteredUsers;
+                    _filteredUsers =
+                        _filteredUsers.isEmpty && _searchController.text.isEmpty
+                            ? _allUsers
+                            : _filteredUsers;
 
                     return ListView.builder(
                       itemCount: _filteredUsers.length,
                       itemBuilder: (context, index) {
                         UserData user = _filteredUsers[index];
                         return Card(
-                          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          margin:
+                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
                           child: ListTile(
                             leading: CircleAvatar(
                               backgroundColor: Colors.blueAccent,
                               child: Text(
                                 user.name!.substring(0, 1).toUpperCase(),
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold),
                               ),
                             ),
                             title: Text(user.name ?? "No Name",
                                 style: TextStyle(fontWeight: FontWeight.bold)),
                             subtitle: Text(user.email ?? "No Email"),
-                            trailing: Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                            trailing: Icon(Icons.arrow_forward_ios,
+                                size: 18, color: Colors.grey),
                             onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => SendMoneyScreen(recipient: user),
+                                  builder: (context) =>
+                                      SendMoneyScreen(recipient: user),
                                 ),
                               );
                             },

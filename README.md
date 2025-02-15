@@ -19,7 +19,7 @@ Android Studio/Xcode
 VS Code (Optional, but recommended)
 
 2️⃣ Clone the Repository
-git clone https://github.com/vrajalmodi97/task_project/
+git clone https://github.com/vrajalmodi97/task_project
 cd task_project
 
 3️⃣ Install Dependencies

@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:task_project/core/blocs/services/shared_prefs.dart';
 import 'package:task_project/core/blocs/wallet/wallet_bloc.dart';
 import 'package:task_project/core/blocs/wallet/wallet_event.dart';
@@ -15,11 +17,58 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _showBalance = true;
+  double _cachedBalance = 0.0;
+  late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
+  bool _isOnline = true;
 
   @override
   void initState() {
     super.initState();
-    context.read<WalletBloc>().add(LoadWallet(SharedPrefs().userId));
+    _loadCachedBalance();
+    _subscribeToConnectivityChanges();
+  }
+
+  @override
+  void dispose() {
+    _connectivitySubscription.cancel(); // Cleanup the stream subscription
+    super.dispose();
+  }
+
+  /// Loads cached balance from SharedPrefs
+  void _loadCachedBalance() {
+    setState(() {
+      _cachedBalance = SharedPrefs().walletBalance;
+    });
+  }
+
+  /// Subscribes to connectivity changes and loads data accordingly
+  void _subscribeToConnectivityChanges() {
+    _connectivitySubscription = Connectivity()
+        .onConnectivityChanged
+        .listen((List<ConnectivityResult> result) {
+      if (result.first == ConnectivityResult.none) {
+        // No internet, load cached balance
+        setState(() {
+          _isOnline = false;
+        });
+      } else {
+        // Internet available, fetch from API
+        setState(() {
+          _isOnline = true;
+        });
+        context.read<WalletBloc>().add(LoadWallet(SharedPrefs().userId));
+      }
+    });
+
+    // Check initial connectivity state
+    // Connectivity().checkConnectivity().then((result) {
+    //   if (result == ConnectivityResult.none) {
+    //     setState(() => _isOnline = false);
+    //   } else {
+    //     setState(() => _isOnline = true);
+    //     context.read<WalletBloc>().add(LoadWallet(SharedPrefs().userId));
+    //   }
+    // });
   }
 
   void _showLogoutDialog(BuildContext context) {
@@ -54,17 +103,13 @@ class _HomeScreenState extends State<HomeScreen> {
     String userName = SharedPrefs().name;
 
     return Scaffold(
-      // appBar: AppBar(title: Text('Wallet')),
       body: Padding(
         padding: EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              height: 40,
-            ),
+            SizedBox(height: 40),
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
@@ -72,12 +117,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   maxLines: 2,
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
-                Align(
-                  alignment: Alignment.topRight,
-                  child: IconButton(
-                    icon: Icon(Icons.logout, size: 28, color: Colors.red),
-                    onPressed: () => _showLogoutDialog(context),
-                  ),
+                IconButton(
+                  icon: Icon(Icons.logout, size: 28, color: Colors.red),
+                  onPressed: () => _showLogoutDialog(context),
                 ),
               ],
             ),
@@ -91,55 +133,19 @@ class _HomeScreenState extends State<HomeScreen> {
             /// Wallet Balance Section
             BlocBuilder<WalletBloc, WalletState>(
               builder: (context, state) {
+                if (!_isOnline) {
+                  return _buildBalanceCard(_cachedBalance, isOffline: true);
+                }
+
                 if (state is WalletLoading) {
                   return Center(child: CircularProgressIndicator());
                 } else if (state is WalletLoaded) {
-                  return Card(
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: Column(
-                        children: [
-                          Text("Your Wallet Balance",
-                              style: TextStyle(
-                                  fontSize: 16, color: Colors.grey[700])),
-                          SizedBox(height: 10),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                _showBalance
-                                    ? 'PHP ${state.balance.toStringAsFixed(2)}'
-                                    : 'PHP ******',
-                                style: TextStyle(
-                                    fontSize: 26, fontWeight: FontWeight.bold),
-                              ),
-                              IconButton(
-                                icon: Icon(
-                                  _showBalance
-                                      ? Icons.visibility
-                                      : Icons.visibility_off,
-                                  color: Colors.grey[600],
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _showBalance = !_showBalance;
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
+                  SharedPrefs().walletBalance = state.balance; // Cache balance
+                  return _buildBalanceCard(state.balance);
                 } else if (state is WalletError) {
                   return Center(child: Text(state.error));
                 } else {
-                  return Center(child: Text('Error loading wallet balance'));
+                  return _buildBalanceCard(_cachedBalance);
                 }
               },
             ),
@@ -195,6 +201,53 @@ class _HomeScreenState extends State<HomeScreen> {
           SizedBox(height: 8),
           Text(label, style: TextStyle(fontSize: 14)),
         ],
+      ),
+    );
+  }
+
+  /// Wallet balance card
+  Widget _buildBalanceCard(double balance, {bool isOffline = false}) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Text("Your Wallet Balance",
+                style: TextStyle(fontSize: 16, color: Colors.grey[700])),
+            SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  _showBalance
+                      ? 'PHP ${balance.toStringAsFixed(2)}'
+                      : 'PHP ******',
+                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                ),
+                IconButton(
+                  icon: Icon(
+                    _showBalance ? Icons.visibility : Icons.visibility_off,
+                    color: Colors.grey[600],
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _showBalance = !_showBalance;
+                    });
+                  },
+                ),
+              ],
+            ),
+            if (isOffline)
+              Text(
+                "Offline Mode: Data may not be up to date.",
+                style: TextStyle(fontSize: 14, color: Colors.red),
+              ),
+          ],
+        ),
       ),
     );
   }

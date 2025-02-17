@@ -14,6 +14,7 @@ class WalletBloc extends Bloc<WalletEvent, WalletState> {
   void _onLoadWallet(LoadWallet event, Emitter<WalletState> emit) async {
     emit(WalletLoading());
     try {
+      print("_onLoadWallet>>" + event.userId);
       final balance = await walletRepository.getBalance(event.userId);
       emit(WalletLoaded(balance));
     } catch (e) {
@@ -32,6 +33,7 @@ class WalletBloc extends Bloc<WalletEvent, WalletState> {
 
   void _onSendMoney(SendMoney event, Emitter<WalletState> emit) async {
     try {
+      print("_onLoadWallet>>" );
       await walletRepository.sendMoney(event.senderId, event.recipientId,
           event.senderName, event.recipientName, event.amount);
       emit(WalletTransactionSuccess());
